@@ -4,6 +4,9 @@
  * The volume is controlled by 5 digital outputs which are connected to diodes and resistors
  * which are used as voltage dividers. So we have 5 different volumes/levels for the pulses plus the
  * option to mute it completely.
+ *
+ *  requires XPLDirect plugin and library
+ *  (free from here https://www.patreon.com/curiosityworkshop)
  * 
  * melbo @x-plane.org - 20210419
  *
