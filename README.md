@@ -14,7 +14,7 @@ option to mute it completely.
 	YouTube:  https://youtube.com/channel/UCISdHdJIundC-OSVAEPzQIQ
 
 
-# the output line is supposed to feed a subwoofer amp which drives the transducer
+# The output line (3.5mm jack) is supposed to feed a subwoofer amp which drives the transducer
 
 
 Examples:
