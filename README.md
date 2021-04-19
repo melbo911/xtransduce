@@ -8,13 +8,16 @@ option to mute it completely.
 
 	melbo @x-plane.org - 20210419
 
-# Requires the XPLDirect plugin and library
+...
+
+Requires the XPLDirect plugin and library
 
 	patreon:  www.patreon.com/curiosityworkshop
 	YouTube:  https://youtube.com/channel/UCISdHdJIundC-OSVAEPzQIQ
 
+...
 
-# The output line (3.5mm jack) is supposed to feed a subwoofer amp which drives the transducer
+The output line (3.5mm jack) is supposed to feed a subwoofer amp which drives the transducer
 
 
 Examples:
