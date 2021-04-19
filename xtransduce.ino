@@ -25,12 +25,7 @@ XPLDirect Xinterface(&Serial);      // create an instance of it
 // constants
 
 
-
 // global variables
-//int volume[] = {5,6,7,8,9};        // digital pins for 5 different volume levels
-
-// bit on the digital port B for 5 different volume levels
-byte volume[] = {0x01,0x02,0x04,0x08,0x10};
 
 long int counter;
 bool state;
@@ -80,15 +75,9 @@ void setup() {
 
    digitalWrite(LED_BUILTIN, LOW);
 
-   // init output ports and put them quiet
-/*
-   for (int i=0; i<sizeof(volume);i++){
-      pinMode(volume[i],OUTPUT);
-      digitalWrite(volume[i],0);
-   }
-*/
+   // init output port and put them quiet
    DDRB  &= B11100000;  // set bit 0-4 (pins 8-12) as INPUT
-  // PORTB |= B00011111;  // prep 0-4 as OUTPUT
+   PORTB &= B11100000;  // set bit 0-4 (pins 8-12) to LOW ( no pulldown )
 
    // init vars
    rpm[0]        = 0.0;
