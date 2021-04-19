@@ -4,9 +4,6 @@
  * The volume is controlled by 5 digital outputs which are connected to diodes and resistors
  * which are used as voltage dividers. So we have 5 different volumes/levels for the pulses plus the
  * option to mute it completely.
- *
- *  requires XPLDirect plugin and library
- *  (free from here https://www.patreon.com/curiosityworkshop)
  * 
  * melbo @x-plane.org - 20210419
  *
@@ -17,10 +14,23 @@
 #include <XPLDirect.h>              // include file for the X-plane direct interface
 XPLDirect Xinterface(&Serial);      // create an instance of it
 
+/*
+	port B    8 - 13   ( 14 + 15 = crystal pins. dont use )
+
+	port C    A0 - A5  ( analog inputs )
+
+	port D    0 - 7    ( 0 = RX , 1 = TX . dont use )
+*/
+
 // constants
 
+
+
 // global variables
-int volume[] = {5,6,7,8,9};         // digital pins for 5 different volume levels
+//int volume[] = {5,6,7,8,9};        // digital pins for 5 different volume levels
+
+// bit on the digital port B for 5 different volume levels
+byte volume[] = {0x01,0x02,0x04,0x08,0x10};
 
 long int counter;
 bool state;
@@ -29,6 +39,8 @@ int vol;
 int lastVol;
 long int v_z;
 long int v_x;
+long int paused;
+long int crashed;
 float force;
 float airSpeed;
 float verticalSpeed;
@@ -59,7 +71,9 @@ void setup() {
    Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"), XPL_READ, 100, 1, blades,0);    
    Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_x"), XPL_WRITE, 100, 0, &v_x);
    //Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_z"), XPL_READWRITE, 100, 0, &v_z);
-   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"), XPL_READ, 100, 0, &force);
+   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"), XPL_READ, 100, 1.1, &force);
+   Xinterface.registerDataRef(F("sim/flightmodel2/misc/has_crashed"), XPL_READ, 100, 1, &paused);
+   Xinterface.registerDataRef(F("sim/time/paused"), XPL_READ, 100, 1, &crashed);
    Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"), XPL_READ, 100, 1, &airSpeed);
    Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1, &verticalSpeed);
 
@@ -67,10 +81,14 @@ void setup() {
    digitalWrite(LED_BUILTIN, LOW);
 
    // init output ports and put them quiet
+/*
    for (int i=0; i<sizeof(volume);i++){
       pinMode(volume[i],OUTPUT);
       digitalWrite(volume[i],0);
    }
+*/
+   DDRB  &= B11100000;  // set bit 0-4 (pins 8-12) as INPUT
+  // PORTB |= B00011111;  // prep 0-4 as OUTPUT
 
    // init vars
    rpm[0]        = 0.0;
@@ -81,6 +99,8 @@ void setup() {
    vol           = 2;
    lastVol       = 0;
    counter       = 0;
+   paused        = 0;
+   crashed       = 0;
 }
 
 
@@ -147,14 +167,13 @@ void loop() {
 }
 
 void setVol(int vol, int val) {
-   if ( vol != lastVol ) {
-      if ( lastVol > 0 ){
-         digitalWrite(volume[lastVol-1],0);
-      }
-      lastVol = vol;
-   }
-   if ( vol > 0 && vol <= sizeof(volume) ) {
-      digitalWrite(volume[vol-1],val);
+
+   DDRB   &= B11100000;  // set 0-4 as INPUT ( dont touch 6-7 )
+   PORTB  &= B11100000;  // set 0-4 to LOW   ( no pullup )
+
+   if ( val > 0 && vol > 0 && vol <= 5 && (paused+crashed) == 0 ) {
+      DDRB  |= B00000001 << vol-1;   // only set "vol" to OUTPUT
+      PORTB |= B00000001 << vol-1;   // only set "vol" to HIGH
    }
 }
 
