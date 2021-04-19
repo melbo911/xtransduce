@@ -6,25 +6,20 @@ The volume is controlled by 5 digital outputs which are connected to diodes and 
 which are used as voltage dividers. So we have 5 different volumes/levels for the pulses plus the
 option to mute it completely.
 
-	melbo @x-plane.org - 20210419
+melbo @x-plane.org - 20210419
 
 
-Requires the XPLDirect plugin and library
-
+	#### Requires the XPLDirect plugin and library
 	patreon:  www.patreon.com/curiosityworkshop
 	YouTube:  https://youtube.com/channel/UCISdHdJIundC-OSVAEPzQIQ
 
 
-```
 The output line (3.5mm jack) is supposed to feed a subwoofer amp which drives the transducer
 
-```
 
-*Examples:*
-
-### TRANSDUCER
+#### TRANSDUCER
 https://www.amazon.de/Bassshaker-Körperschallwandler-Heimkino-Playseats-Reckhorn/dp/B00AMH17GC/
 
-### MONO SUBWOOFER
+#### MONO SUBWOOFER
 https://www.amazon.de/Nobsound-Subwoofer-Frequency-Channel-Amplifier-Black/dp/B0753CPVHS
 
