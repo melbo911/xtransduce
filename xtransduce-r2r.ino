@@ -24,9 +24,7 @@ XPLDirect Xinterface(&Serial);      // create an instance of it
 
 // constants
 
-// rpm * blades
-const PROGMEM int bladeLevel[] = {0, 0, 2x350, 3x350, 4x350, 5x350, 6x360};
-
+// global variables
 long int counter;
 bool state;
 float val;
@@ -125,8 +123,8 @@ void loop() {
       if ( val > 0.01 && alive ) { // avoid div/0
          
          // set volume based on max rotor rpm
-         vol = ( (rpm * blades) / (bladeLevel[int(blades)]/15) * 15) ;
-         if ( vol > 15 ) { vol = 15; }
+         vol = ( rpm / (350/16) * 16 );
+         if ( vol > 16 ) { vol = 16; }
 
          // adjust volume based on G-force
          if ( force > 1.0 ) {     
