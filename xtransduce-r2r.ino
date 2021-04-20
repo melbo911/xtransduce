@@ -1,9 +1,8 @@
 /*
  * Arduino sketch to link X-Plane to a transducer. It's used to "feel" the rotor vibrations
  * based on its RPMs and gives feedback on G-forces and warns at VRS situations. 
- * The volume is controlled by 5 digital outputs which are connected to diodes and resistors
- * which are used as voltage dividers. So we have 5 different volumes/levels for the pulses plus the
- * option to mute it completely.
+ * The volume is controlled by 5 digital outputs which are connected to a R2R resistor array
+ * which provides a voltage divider for 32 diffenent intesity levels.
  * 
  * melbo @x-plane.org - 20210420
  *
@@ -64,13 +63,14 @@ void setup() {
 
    Xinterface.registerDataRef(F("sim/cockpit2/engine/indicators/prop_speed_rpm"), XPL_READ, 100, 1, &rpm,0);  
    Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"), XPL_READ, 100, 1, &blades,0);    
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_x"), XPL_WRITE, 100, 0, &v_x);
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_y"), XPL_WRITE, 100, 0, &v_y);
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_z"), XPL_READ, 100, 0, &v_z);
    Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"), XPL_READ, 100, .1, &force);
    Xinterface.registerDataRef(F("sim/time/zulu_time_sec"), XPL_READ, 100, 1, &zulu);
    Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"), XPL_READ, 100, 1, &airSpeed);
    Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1, &verticalSpeed);
+
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_x"), XPL_WRITE, 100, 0, &v_x);  // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_y"), XPL_WRITE, 100, 0, &v_y);  // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_z"), XPL_READ, 100, 0, &v_z);   // DEBUG
 
    digitalWrite(LED_BUILTIN, LOW);
 
@@ -140,7 +140,7 @@ void loop() {
             vol = 31;              // VRS warning 
          }
 
-         // provide feedback about rpms to DatarefTool
+         // provide feedback about rpms to DatarefTool  DEBUG !
          v_x = int(val);
          v_y = int(vol);
 
