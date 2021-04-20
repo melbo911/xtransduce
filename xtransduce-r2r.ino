@@ -128,7 +128,7 @@ void loop() {
          
          // set volume based on rotor rpm
          vol = int(val * 0.5) ;
-         if ( vol > 15 ) { vol = 15 };
+         if ( vol > 15 ) { vol = 15; }
 
 /*
          if ( val < 5.0 ) {       // low rpm = lowest volume
