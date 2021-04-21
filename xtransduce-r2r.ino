@@ -4,7 +4,7 @@
  * The volume is controlled by 5 digital outputs which are connected to a R2R resistor array
  * which provides a voltage divider for 32 diffenent intesity levels.
  * 
- * melbo @x-plane.org - 20210420
+ * melbo @x-plane.org - 20210421
  *
  */
 
@@ -61,16 +61,16 @@ void setup() {
       delay(300);
    }
 
-   Xinterface.registerDataRef(F("sim/cockpit2/engine/indicators/prop_speed_rpm"), XPL_READ, 100, 1, &rpm,0);  
-   Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"), XPL_READ, 100, 1, &blades,0);    
-   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"), XPL_READ, 100, .1, &force);
-   Xinterface.registerDataRef(F("sim/time/zulu_time_sec"), XPL_READ, 100, 1, &zulu);
-   Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"), XPL_READ, 100, 1, &airSpeed);
-   Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1, &verticalSpeed);
+   Xinterface.registerDataRef(F("sim/cockpit2/engine/indicators/prop_speed_rpm"),XPL_READ, 100, 1,  &rpm,0);  
+   Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"),             XPL_READ, 100, 1,  &blades,0);    
+   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"),                XPL_READ, 100, .1, &force);
+   Xinterface.registerDataRef(F("sim/time/zulu_time_sec"),                       XPL_READ, 100, 1,  &zulu);
+   Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"),  XPL_READ, 100, 1,  &airSpeed);
+   Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1,  &verticalSpeed);
 
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_x"), XPL_WRITE, 100, 0, &v_x);  // DEBUG
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_y"), XPL_WRITE, 100, 0, &v_y);  // DEBUG
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_z"), XPL_READ, 100, 0, &v_z);   // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_x"), XPL_WRITE,     100, 0, &v_x);  // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_y"), XPL_WRITE,     100, 0, &v_y);  // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_z"), XPL_READWRITE, 100, 0, &v_z);  // DEBUG
 
    digitalWrite(LED_BUILTIN, LOW);
 
@@ -85,12 +85,12 @@ void setup() {
    airSpeed      = 0.0;
    verticalSpeed = 0.0;
    force         = 0.0;
-   zulu          = 0.0;
    zuluLast      = 0.0;
-   watchdog      = 0;
+   watchdog      = 500;
    alive         = 0;
    vol           = 2;
    counter       = 0;
+   v_z           = -1;
 }
 
 
@@ -107,8 +107,10 @@ void loop() {
 
    if ( watchdog < 0 ) {
       if ( zulu > zuluLast ) {    // sim still running ??
+         if ( zuluLast > 0 ) {    // skip on new start
+            alive = 1;
+         }
          zuluLast = zulu;
-         alive = 1;
       } else {
          alive = 0;
       }
@@ -148,7 +150,9 @@ void loop() {
          v_x = int(val);
          v_y = int(vol);
 
-         //vol = v_z;    // DEBUG !!!! get VOL input from Datareftool
+         if ( v_z >= 0.0 ) {
+           vol = v_z;    // DEBUG !!!! get VOL input from Datareftool
+         }
             
          if ( state ) {
             setVol(vol);          // set volume and HIGH state
