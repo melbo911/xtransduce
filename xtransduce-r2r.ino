@@ -118,13 +118,12 @@ void loop() {
    }
       
    if ( m >= counter ) {
-      val = (rpm * blades / 60);
-     
-      if ( val > 0.01 && alive ) { // avoid div/0
+       
+      if ( rpm > 0.0 && alive ) { // avoid div/0
          
          // set volume based on max rotor rpm
-         vol = ( rpm / (350/16) * 16 );
-         if ( vol > 16 ) { vol = 16; }
+         vol = ( rpm / (360/15) );
+         if ( vol > 15 ) { vol = 15; }
 
          // adjust volume based on G-force
          if ( force > 1.0 ) {     
@@ -140,13 +139,16 @@ void loop() {
             vol = 31;              // VRS warning 
          }
 
-         // provide feedback about rpms to DatarefTool  DEBUG !
+         // restart counter
+         val = (rpm * blades / 60);
+         if ( val < 1 ) { val = 1;}
+         counter = m + int(1000/val) ;   // book next pit-stop
+
+         // provide feedback to DatarefTool  DEBUG !
          v_x = int(val);
          v_y = int(vol);
 
          //vol = v_z;    // DEBUG !!!! get VOL input from Datareftool
-
-         counter = m + int(1000/val) ;   // book next pit-stop
             
          if ( state ) {
             setVol(vol);          // set volume and HIGH state
