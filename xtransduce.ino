@@ -1,11 +1,10 @@
 /*
  * Arduino sketch to link X-Plane to a transducer. It's used to "feel" the rotor vibrations
  * based on its RPMs and gives feedback on G-forces and warns at VRS situations. 
- * The volume is controlled by 5 digital outputs which are connected to diodes and resistors
- * which are used as voltage dividers. So we have 5 different volumes/levels for the pulses plus the
- * option to mute it completely.
+ * The volume is controlled by 5 digital outputs which are connected to a R2R resistor array
+ * which provides a voltage divider for 32 diffenent intesity levels.
  * 
- * melbo @x-plane.org - 20210420
+ * melbo @x-plane.org - 20210423
  *
  */
 
@@ -24,22 +23,23 @@ XPLDirect Xinterface(&Serial);      // create an instance of it
 
 // constants
 
+// global variables
 long int counter;
 bool state;
 float val;
 int vol;
 int alive;
 int watchdog;
-long int v_z;
 long int v_x;
+long int v_y;
+long int v_z;
 float zulu;
 float zuluLast;
-float mass;
 float force;
 float airSpeed;
 float verticalSpeed;
-float rpm[8];
-float blades[8];
+float rpm;
+float blades;
 
 /*
  *  SETUP
@@ -61,15 +61,16 @@ void setup() {
       delay(300);
    }
 
-   Xinterface.registerDataRef(F("sim/cockpit2/engine/indicators/prop_speed_rpm"), XPL_READ, 100, .1, rpm,0);  
-   Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"), XPL_READ, 100, 1, blades,0);    
-   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_x"), XPL_WRITE, 100, 0, &v_x);
-   //Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_z"), XPL_READWRITE, 100, 0, &v_z);
-   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"), XPL_READ, 100, .1, &force);
-   Xinterface.registerDataRef(F("sim/flightmodel/forces/M_mass"), XPL_READ, 100, 1, &mass);
-   Xinterface.registerDataRef(F("sim/time/zulu_time_sec"), XPL_READ, 100, 1, &zulu);
-   Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"), XPL_READ, 100, 1, &airSpeed);
-   Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1, &verticalSpeed);
+   Xinterface.registerDataRef(F("sim/cockpit2/engine/indicators/prop_speed_rpm"),XPL_READ, 100, 1,  &rpm,0);  
+   Xinterface.registerDataRef(F("sim/aircraft/prop/acf_num_blades"),             XPL_READ, 100, 1,  &blades,0);    
+   Xinterface.registerDataRef(F("sim/flightmodel/forces/g_nrml"),                XPL_READ, 100, .1, &force);
+   Xinterface.registerDataRef(F("sim/time/zulu_time_sec"),                       XPL_READ, 100, 1,  &zulu);
+   Xinterface.registerDataRef(F("sim/flightmodel/position/indicated_airspeed"),  XPL_READ, 100, 1,  &airSpeed);
+   Xinterface.registerDataRef(F("sim/cockpit2/gauges/indicators/vvi_fpm_pilot"), XPL_READ, 100, 1,  &verticalSpeed);
+
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_x"), XPL_WRITE,     100, 0, &v_x);  // DEBUG
+   Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_y"), XPL_WRITE,     100, 0, &v_y);  // DEBUG
+   //Xinterface.registerDataRef(F("sim/multiplayer/position/plane9_v_z"), XPL_READWRITE, 100, 0, &v_z);  // DEBUG
 
    digitalWrite(LED_BUILTIN, LOW);
 
@@ -78,19 +79,20 @@ void setup() {
    PORTB &= B11100000;  // set bit 0-4 (pins 8-12) to LOW ( no pulldown )
 
    // init vars
-   rpm[0]        = 0.0;
-   blades[0]     = 0.0;
+   //rpm           = 0.0;
+   //blades        = 0.0;
+   //force         = 0.0;
+   //zulu          = 0.0;
+   //airSpeed      = 0.0;
+   //verticalSpeed = 0.0;
+
    val           = 1.0;
-   airSpeed      = 0.0;
-   verticalSpeed = 0.0;
-   force         = 0.0;
-   mass          = 0.0;
-   zulu          = 0.0;
    zuluLast      = 0.0;
-   watchdog      = 0;
+   watchdog      = 500;
    alive         = 0;
    vol           = 2;
    counter       = 0;
+   //v_z           = -1;
 }
 
 
@@ -103,80 +105,88 @@ void setup() {
 void loop() {
    long int m = millis();
   
-   Xinterface.xloop();  //  needs to run every cycle
+   Xinterface.xloop();            //  needs to run every cycle
 
    if ( watchdog < 0 ) {
-      if ( zulu > zuluLast ) {    // sim stopped ??
+      if ( zulu > zuluLast ) {    // sim still running ??
+         if ( zuluLast > 0 ) {    // skip on new start
+            alive = 1;
+         }
          zuluLast = zulu;
-         alive = 1;
       } else {
          alive = 0;
       }
-      watchdog = 500;
+      watchdog = 600;
    } else {
       watchdog--;
    }
       
    if ( m >= counter ) {
-      val = (rpm[0] * blades[0] / 60);
-     
-      if ( val > 0.0 && alive ) {         // avoid div/0
+       
+      if ( rpm > 0.0 && alive ) { // avoid div/0
          
-         // set volume based on rotor rpm
-         if ( val < 5.0 ) {      // low rpm = lowest volume
-            vol = 1;
-         } else {
-            if ( val < 10.0 ) {  // a bit louder during startup
-               vol = 2;
-            } else {
-               vol = 3;          // normal volume
-            }
-         }
+         // set volume based on max rotor rpm
+         vol = ( rpm / (360/15) );
+         if ( vol > 15 ) { vol = 15; }
 
          // adjust volume based on G-force
-         if ( force > 1.2 ) {     
-            if ( force > 1.4 ) {  
-               vol = 5;          // g-force above 1.4 = max volume
+         if ( force > 1.0 ) {     
+            if ( force > 2.0 ) {  
+               vol = 31;                // g-force above 2.0 = max volume
             } else {
-               vol = 4;          // g-force above 1.2 = louder than normal
+               vol = int(vol * force);  // g-force above 1.0 = louder than normal
             }
          }
 
          // VRS alert at IAS less than 30kt with decend of more than 300 ft/min
-         if ( mass > 20.0 || (airSpeed < 30.0 && verticalSpeed < -300.0) ) {  
-            vol = 5;             // VRS warning
+         if (  (airSpeed < 30.0 && verticalSpeed < -300.0) ) {  
+            vol = 31;              // VRS warning 
          }
 
-         // provide feedback to DatarefTool
-         v_x = int(rpm[0]);
-
+         // restart counter
+         val = (rpm * blades / 60);
+         if ( val < 1 ) { val = 1;}
          counter = m + int(1000/val) ;   // book next pit-stop
+
+         // provide feedback to DatarefTool  DEBUG !
+         v_x = int(val);
+         v_y = int(vol);
+
+         //if ( v_z >= 0.0 ) {
+         //  vol = v_z;    // DEBUG !!!! get VOL input from Datareftool
+         //}
             
-         setVol(vol,state);      // set volume and state
+         if ( state ) {
+            setVol(vol);          // set volume and HIGH state
+         } else {
+            setVol(0);            // set LOW state
+         }
          
       } else {
 
-         val = 0;
-         v_x = 999;              // rpm 0 or undef
+         v_x = 999;               // rpm 0 or undef
          counter = m + 500;      // restart counter, see you in 500 ms
-         setVol(vol,0);          // switch off output
+         setVol(0);               // switch off output
       }
      
-      state=!state;             // toggle state
+      state=!state;               // toggle state
       digitalWrite(LED_BUILTIN, state);  // LED shows we're still alive
    }
   
-   delay(2);   // relief cpu and reduce loop count
+   delay(2);                      // relief cpu and reduce loop count
 }
 
-void setVol(int vol, int val) {
+void setVol(int vol) {
 
-   DDRB   &= B11100000;  // set 0-4 as INPUT ( dont touch 6-7 )
-   PORTB  &= B11100000;  // set 0-4 to LOW   ( no pullup )
+   DDRB   &= B11100000;           // set 0-4 as INPUT ( dont touch 6-7 )
+   PORTB  &= B11100000;           // set 0-4 to LOW   ( no pullup )
 
-   if ( val > 0 && vol > 0 && vol <= 5 ) {
-      DDRB  |= B00000001 << vol-1;   // only set "vol" to OUTPUT
-      PORTB |= B00000001 << vol-1;   // only set "vol" to HIGH
+   if ( vol > 0 ) {
+      if ( vol > 31 ) {           // 5 bit only
+         vol = 31;
+      }
+      DDRB  |= vol;               // only set "vol" to OUTPUT
+      PORTB |= vol;               // only set "vol" to HIGH
    }
 }
 
