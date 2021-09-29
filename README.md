@@ -6,6 +6,9 @@ The volume is controlled by 5 digital outputs which are connected to a R2R resis
 which is used as voltage dividers. So we have 31 different volumes/levels for the pulses, 
 plus the option to mute it completely. 
 
+The resistors have to be selected depending of the desired output levels. In my setup I was
+using 56k for for R1 - R5 , 10k for R6 and 28k ( 2x56k parallel ) for R7 - R10. 
+
 melbo @x-plane.org - 20210427
 
 
