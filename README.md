@@ -7,7 +7,9 @@ which is used as voltage dividers. So we have 31 different volumes/levels for th
 plus the option to mute it completely. 
 
 The resistors have to be selected depending on the desired output levels. In my setup I was
-using 56k for for R1 - R6 and 28k ( 2x56k parallel ) for R7 - R10. 
+using 56k for R1-R6 and 28k ( 2x56k parallel ) for R7-R10. 
+
+Fine adjustment of output level is done with R11 (56k) and R12 (10k).
 
 melbo @x-plane.org - 20210427
 
